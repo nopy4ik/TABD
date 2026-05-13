@@ -43,9 +43,9 @@ Promo Cafe Share = AVERAGE(detailed_data[promotion_cafe_active])
 Ad Active Share = AVERAGE(detailed_data[ad_active])
 Fuel Sales per Traffic = DIVIDE([Total Fuel Sales], [Total Traffic])
 Shop Revenue per Traffic = DIVIDE([Shop Revenue], [Total Traffic])
-Price Gap AI92 = AVERAGE(detailed_data[price_AI92] - detailed_data[competitor_price_AI92])
-Price Gap AI95 = AVERAGE(detailed_data[price_AI95] - detailed_data[competitor_price_AI95])
-Price Gap DT = AVERAGE(detailed_data[price_DT_WINTER] - detailed_data[competitor_price_DT])
+Price Gap AI92 = AVERAGEX(detailed_data, detailed_data[price_AI92] - detailed_data[competitor_price_AI92])
+Price Gap AI95 = AVERAGEX(detailed_data, detailed_data[price_AI95] - detailed_data[competitor_price_AI95])
+Price Gap DT = AVERAGEX(detailed_data, detailed_data[price_DT_WINTER] - detailed_data[competitor_price_DT])
 ```
 
 ## Страницы dashboard
@@ -151,4 +151,3 @@ Price Gap DT = AVERAGE(detailed_data[price_DT_WINTER] - detailed_data[competitor
 - confidence band;
 - таблицу ошибок прогноза;
 - KPI по MAE / MAPE / RMSE.
-
