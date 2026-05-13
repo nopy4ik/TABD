@@ -25,6 +25,11 @@ h1 {
   font-weight: 700;
 }
 
+p {
+  margin: 8px 0 0;
+  color: #52606d;
+}
+
 .toolbar {
   width: 320px;
 }
@@ -52,6 +57,17 @@ h1 {
 .metric-value {
   font-size: 24px;
   font-weight: 700;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.panel {
+  margin-top: 16px;
 }
 
 .data-table {

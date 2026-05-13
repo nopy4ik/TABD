@@ -1,10 +1,24 @@
-{
-  "model": "HistGradientBoostingRegressor baseline",
-  "target": "total_fuel_sales",
-  "train_rows": 200400,
-  "test_rows": 18600,
-  "mae": 4.4204603740258746,
-  "mse": 94.19264413836336,
-  "rmse": 9.705289492764415,
-  "r2": 0.9767037986524929
-}
+[
+  {
+    "mae": 4.4204603740258746,
+    "mse": 94.19264413836336,
+    "rmse": 9.705289492764415,
+    "r2": 0.9767037986524929,
+    "model": "HistGradientBoostingRegressor baseline",
+    "target": "total_fuel_sales",
+    "target_label": "Продажи топлива",
+    "train_rows": 200400,
+    "test_rows": 18600
+  },
+  {
+    "mae": 25.733356380325134,
+    "mse": 4607.746046971874,
+    "rmse": 67.8803804274245,
+    "r2": 0.9307909190274708,
+    "model": "HistGradientBoostingRegressor baseline",
+    "target": "shop_total_revenue",
+    "target_label": "Выручка магазина",
+    "train_rows": 200400,
+    "test_rows": 18600
+  }
+]

@@ -1,4 +1,17 @@
-"""Train a baseline model and export artifacts for the Dash dashboard."""
+"""Обучение базовых моделей и выгрузка артефактов для Dash.
+
+Этот скрипт нужен как первый полностью рабочий ML-пайплайн проекта.
+Он не заменяет TFT, но проверяет весь поток данных:
+
+1. читает исходный `detailed_data.csv`;
+2. делит данные по времени на train/test;
+3. обучает быстрые модели для продаж топлива и товаров;
+4. считает метрики качества;
+5. сохраняет прогнозы, важность признаков и рекомендации.
+
+После починки окружения TFT файл `scripts/train_tft.py` должен сохранить
+артефакты в таком же формате, чтобы Dash продолжил работать без переписывания.
+"""
 
 from __future__ import annotations
 
@@ -19,8 +32,15 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "_задание"
 ARTIFACTS_DIR = ROOT / "artifacts"
 
-TARGET = "total_fuel_sales"
+# В baseline обучаем две основные цели, которые нужны в dashboard:
+# продажи топлива и выручка сопутствующих товаров.
+TARGETS = {
+    "total_fuel_sales": "Продажи топлива",
+    "shop_total_revenue": "Выручка магазина",
+}
 
+# Категориальные признаки кодируются OrdinalEncoder.
+# Для baseline этого достаточно, а TFT позже будет использовать свои энкодеры.
 CATEGORICAL_FEATURES = [
     "station_id",
     "road_type",
@@ -32,6 +52,8 @@ CATEGORICAL_FEATURES = [
     "holiday_name",
 ]
 
+# Числовые признаки оставляем в исходном виде.
+# Исходные CSV не меняются: все преобразования выполняются только в памяти.
 NUMERIC_FEATURES = [
     "distance_to_city_km",
     "total_pumps",
@@ -82,8 +104,12 @@ NUMERIC_FEATURES = [
     "is_night",
 ]
 
+FEATURES = CATEGORICAL_FEATURES + NUMERIC_FEATURES
+
 
 def ensure_dirs() -> None:
+    """Создает каталоги для артефактов, если их еще нет."""
+
     for path in [
         ARTIFACTS_DIR / "forecasts",
         ARTIFACTS_DIR / "metrics",
@@ -93,20 +119,30 @@ def ensure_dirs() -> None:
 
 
 def load_data() -> pd.DataFrame:
+    """Загружает исходные данные и приводит служебные поля к нужным типам."""
+
     df = pd.read_csv(DATA_DIR / "detailed_data.csv")
     df["timestamp"] = pd.to_datetime(df["timestamp"])
+
+    # Категориальные пропуски заменяем строкой `none`, чтобы энкодер видел
+    # отдельную категорию, а не NaN.
     for col in CATEGORICAL_FEATURES:
         df[col] = df[col].fillna("none").astype(str)
+
     return df.sort_values(["timestamp", "station_id"]).reset_index(drop=True)
 
 
 def split_by_time(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Делит датасет по времени: обучение до декабря, тест на декабре."""
+
     train = df[df["timestamp"] < "2023-12-01"].copy()
     test = df[df["timestamp"] >= "2023-12-01"].copy()
     return train, test
 
 
 def build_model() -> Pipeline:
+    """Собирает sklearn Pipeline: кодирование признаков + регрессор."""
+
     preprocessor = ColumnTransformer(
         transformers=[
             (
@@ -117,6 +153,9 @@ def build_model() -> Pipeline:
             ("num", "passthrough", NUMERIC_FEATURES),
         ]
     )
+
+    # HistGradientBoostingRegressor выбран как быстрый baseline для большого
+    # почасового датасета. Он обучается заметно быстрее RandomForest.
     regressor = HistGradientBoostingRegressor(
         max_iter=180,
         learning_rate=0.08,
@@ -127,24 +166,47 @@ def build_model() -> Pipeline:
     return Pipeline([("preprocessor", preprocessor), ("model", regressor)])
 
 
-def export_feature_importance(model: Pipeline, test: pd.DataFrame) -> pd.DataFrame:
+def calculate_metrics(actual: pd.Series, prediction: np.ndarray) -> dict:
+    """Считает основные метрики регрессии для отчета и dashboard."""
+
+    mse = mean_squared_error(actual, prediction)
+    return {
+        "mae": float(mean_absolute_error(actual, prediction)),
+        "mse": float(mse),
+        "rmse": float(np.sqrt(mse)),
+        "r2": float(r2_score(actual, prediction)),
+    }
+
+
+def export_feature_importance(model: Pipeline, test: pd.DataFrame, target: str) -> pd.DataFrame:
+    """Оценивает важность признаков через permutation importance.
+
+    Берем ограниченную выборку из test, чтобы расчет не занимал слишком много
+    времени. Для отчета нам важен порядок факторов, а не идеальная точность
+    оценки важности.
+    """
+
     sample = test.sample(min(5000, len(test)), random_state=42)
-    features = CATEGORICAL_FEATURES + NUMERIC_FEATURES
     result = permutation_importance(
         model,
-        sample[features],
-        sample[TARGET],
+        sample[FEATURES],
+        sample[target],
         n_repeats=3,
         random_state=42,
         n_jobs=-1,
     )
-    importance = pd.DataFrame({"feature": features, "importance": result.importances_mean})
+    importance = pd.DataFrame({"feature": FEATURES, "importance": result.importances_mean})
+    importance["target"] = target
+    importance["target_label"] = TARGETS[target]
     return importance.sort_values("importance", ascending=False)
 
 
 def build_recommendations(forecast: pd.DataFrame) -> pd.DataFrame:
+    """Формирует простые рекомендации по станциям на основе ошибок прогноза."""
+
+    fuel_forecast = forecast[forecast["target"] == "total_fuel_sales"].copy()
     station_errors = (
-        forecast.assign(abs_error=lambda x: (x["actual"] - x["prediction"]).abs())
+        fuel_forecast.assign(abs_error=lambda x: (x["actual"] - x["prediction"]).abs())
         .groupby(["station_id", "station_name"], as_index=False)
         .agg(
             actual_mean=("actual", "mean"),
@@ -153,6 +215,9 @@ def build_recommendations(forecast: pd.DataFrame) -> pd.DataFrame:
         )
     )
     station_errors["gap"] = station_errors["prediction_mean"] - station_errors["actual_mean"]
+
+    # Рекомендации здесь rule-based. После TFT можно заменить их на выводы из
+    # прогноза, ошибок, важности признаков и сценарного анализа.
     station_errors["recommendation"] = np.select(
         [
             station_errors["gap"] < -10,
@@ -160,7 +225,7 @@ def build_recommendations(forecast: pd.DataFrame) -> pd.DataFrame:
             station_errors["mae"] > station_errors["mae"].median(),
         ],
         [
-            "Проверить факторы просадки спроса и усилить акции/рекламу в проблемные часы",
+            "Проверить причины просадки спроса: акции, рекламу, цены и трафик в проблемные часы",
             "Проверить достаточность запасов топлива и персонала в часы повышенного спроса",
             "Разобрать станцию отдельно: ошибка прогноза выше медианы сети",
         ],
@@ -169,49 +234,71 @@ def build_recommendations(forecast: pd.DataFrame) -> pd.DataFrame:
     return station_errors.sort_values("mae", ascending=False)
 
 
-def main() -> None:
-    ensure_dirs()
-    df = load_data()
-    train, test = split_by_time(df)
+def train_target(train: pd.DataFrame, test: pd.DataFrame, target: str) -> tuple[pd.DataFrame, dict, pd.DataFrame]:
+    """Обучает одну модель для одной целевой переменной."""
 
     model = build_model()
-    model.fit(train[CATEGORICAL_FEATURES + NUMERIC_FEATURES], train[TARGET])
-    predictions = model.predict(test[CATEGORICAL_FEATURES + NUMERIC_FEATURES])
+    model.fit(train[FEATURES], train[target])
+    predictions = model.predict(test[FEATURES])
 
-    mse = mean_squared_error(test[TARGET], predictions)
-    metrics = {
-        "model": "HistGradientBoostingRegressor baseline",
-        "target": TARGET,
-        "train_rows": int(len(train)),
-        "test_rows": int(len(test)),
-        "mae": float(mean_absolute_error(test[TARGET], predictions)),
-        "mse": float(mse),
-        "rmse": float(np.sqrt(mse)),
-        "r2": float(r2_score(test[TARGET], predictions)),
-    }
+    metrics = calculate_metrics(test[target], predictions)
+    metrics.update(
+        {
+            "model": "HistGradientBoostingRegressor baseline",
+            "target": target,
+            "target_label": TARGETS[target],
+            "train_rows": int(len(train)),
+            "test_rows": int(len(test)),
+        }
+    )
 
     forecast = test[
         [
             "timestamp",
             "station_id",
             "station_name",
-            TARGET,
+            target,
             "total_traffic",
             "ad_active",
             "promotion_fuel_active",
+            "promotion_shop_active",
             "hour",
             "day_of_week",
         ]
     ].copy()
-    forecast = forecast.rename(columns={TARGET: "actual"})
+    forecast = forecast.rename(columns={target: "actual"})
     forecast["prediction"] = predictions
-    forecast["model_version"] = "baseline_hgb_v1"
+    forecast["target"] = target
+    forecast["target_label"] = TARGETS[target]
+    forecast["model_version"] = "baseline_hgb_v2"
 
-    importance = export_feature_importance(model, test)
-    recommendations = build_recommendations(forecast)
+    importance = export_feature_importance(model, test, target)
+    return forecast, metrics, importance
 
-    forecast.to_csv(ARTIFACTS_DIR / "forecasts" / "baseline_forecast.csv", index=False)
-    importance.to_csv(ARTIFACTS_DIR / "metrics" / "baseline_feature_importance.csv", index=False)
+
+def main() -> None:
+    """Запускает весь baseline-пайплайн."""
+
+    ensure_dirs()
+    df = load_data()
+    train, test = split_by_time(df)
+
+    forecasts = []
+    metrics = []
+    importances = []
+
+    for target in TARGETS:
+        forecast, target_metrics, importance = train_target(train, test, target)
+        forecasts.append(forecast)
+        metrics.append(target_metrics)
+        importances.append(importance)
+
+    forecast_df = pd.concat(forecasts, ignore_index=True)
+    importance_df = pd.concat(importances, ignore_index=True)
+    recommendations = build_recommendations(forecast_df)
+
+    forecast_df.to_csv(ARTIFACTS_DIR / "forecasts" / "baseline_forecast.csv", index=False)
+    importance_df.to_csv(ARTIFACTS_DIR / "metrics" / "baseline_feature_importance.csv", index=False)
     recommendations.to_csv(
         ARTIFACTS_DIR / "recommendations" / "station_recommendations.csv",
         index=False,

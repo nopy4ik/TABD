@@ -1,56 +1,111 @@
-feature,importance
-total_traffic,1.2338791135393798
-is_rush_hour,0.04769111157345788
-hour,0.010119023587437548
-promotion_fuel_active,0.008969104675625025
-is_snow,0.002945070791713874
-total_pumps,0.00020995696524443255
-direction,0.00013649487386794648
-day_of_week,7.57872074607091e-05
-competitor_price_AI92,6.763891816297107e-05
-competitor_price_DT,4.476264094355198e-05
-station_id,3.321290348634598e-05
-distance_to_city_km,2.7840435517290096e-05
-price_DT_WINTER,2.6070723857037532e-05
-wind_speed_ms,2.266263538534356e-05
-shop_area_m2,2.180777180009012e-05
-customer_loyalty_score,8.960764584712658e-06
-price_AI92,7.008339535781912e-06
-price_DT_SUMMER,6.3066706609271606e-06
-staff_engagement_score,5.2790460614016155e-06
-road_type,4.195872792100985e-06
-is_night,2.5176721319223696e-06
-competitors_within_5km,1.8712411301210115e-06
-ad_channel,1.614600680747517e-06
-is_holiday,0.0
-month,0.0
-week_of_year,0.0
-price_DT_EURO,0.0
-is_fog,0.0
-traffic_Transporter,0.0
-holiday_name,0.0
-has_car_wash,0.0
-has_cafe,0.0
-season,0.0
-has_shop,0.0
-quarter,0.0
-promotion_cafe_active,0.0
-price_AI95,-8.055426655347493e-08
-ad_active,-1.9541379181475804e-07
-corporate_customer_ratio,-2.273328183440467e-06
-weather_condition,-7.897495807688651e-06
-price_AI98,-1.9574733520211218e-05
-settlement_size,-2.679383627450053e-05
-price_DT_TANEKO,-2.9042004535092165e-05
-is_rain,-4.653251909210917e-05
-promotion_shop_active,-5.7153631583132615e-05
-competitor_price_AI95,-6.9447113711818e-05
-is_weekend,-0.00017049985148387403
-temperature,-0.00035461816570632926
-traffic_Truck_short,-0.0006035378943624788
-traffic_Truck_long,-0.0006720695333983043
-traffic_Undefined,-0.0010733619150923301
-traffic_Truck,-0.0012632803845501472
-visibility_km,-0.0012767514147967358
-precipitation_mm,-0.002550166847084867
-traffic_Passengers_cars,-0.0033311029969387653
+feature,importance,target,target_label
+total_traffic,1.2338791135393798,total_fuel_sales,Продажи топлива
+is_rush_hour,0.04769111157345788,total_fuel_sales,Продажи топлива
+hour,0.010119023587437548,total_fuel_sales,Продажи топлива
+promotion_fuel_active,0.008969104675625025,total_fuel_sales,Продажи топлива
+is_snow,0.002945070791713874,total_fuel_sales,Продажи топлива
+total_pumps,0.00020995696524443255,total_fuel_sales,Продажи топлива
+direction,0.00013649487386794648,total_fuel_sales,Продажи топлива
+day_of_week,7.57872074607091e-05,total_fuel_sales,Продажи топлива
+competitor_price_AI92,6.763891816297107e-05,total_fuel_sales,Продажи топлива
+competitor_price_DT,4.476264094355198e-05,total_fuel_sales,Продажи топлива
+station_id,3.321290348634598e-05,total_fuel_sales,Продажи топлива
+distance_to_city_km,2.7840435517290096e-05,total_fuel_sales,Продажи топлива
+price_DT_WINTER,2.6070723857037532e-05,total_fuel_sales,Продажи топлива
+wind_speed_ms,2.266263538534356e-05,total_fuel_sales,Продажи топлива
+shop_area_m2,2.180777180009012e-05,total_fuel_sales,Продажи топлива
+customer_loyalty_score,8.960764584712658e-06,total_fuel_sales,Продажи топлива
+price_AI92,7.008339535781912e-06,total_fuel_sales,Продажи топлива
+price_DT_SUMMER,6.3066706609271606e-06,total_fuel_sales,Продажи топлива
+staff_engagement_score,5.2790460614016155e-06,total_fuel_sales,Продажи топлива
+road_type,4.195872792100985e-06,total_fuel_sales,Продажи топлива
+is_night,2.5176721319223696e-06,total_fuel_sales,Продажи топлива
+competitors_within_5km,1.8712411301210115e-06,total_fuel_sales,Продажи топлива
+ad_channel,1.614600680747517e-06,total_fuel_sales,Продажи топлива
+is_holiday,0.0,total_fuel_sales,Продажи топлива
+month,0.0,total_fuel_sales,Продажи топлива
+week_of_year,0.0,total_fuel_sales,Продажи топлива
+price_DT_EURO,0.0,total_fuel_sales,Продажи топлива
+is_fog,0.0,total_fuel_sales,Продажи топлива
+traffic_Transporter,0.0,total_fuel_sales,Продажи топлива
+holiday_name,0.0,total_fuel_sales,Продажи топлива
+has_car_wash,0.0,total_fuel_sales,Продажи топлива
+has_cafe,0.0,total_fuel_sales,Продажи топлива
+season,0.0,total_fuel_sales,Продажи топлива
+has_shop,0.0,total_fuel_sales,Продажи топлива
+quarter,0.0,total_fuel_sales,Продажи топлива
+promotion_cafe_active,0.0,total_fuel_sales,Продажи топлива
+price_AI95,-8.055426655347493e-08,total_fuel_sales,Продажи топлива
+ad_active,-1.9541379181475804e-07,total_fuel_sales,Продажи топлива
+corporate_customer_ratio,-2.273328183440467e-06,total_fuel_sales,Продажи топлива
+weather_condition,-7.897495807688651e-06,total_fuel_sales,Продажи топлива
+price_AI98,-1.9574733520211218e-05,total_fuel_sales,Продажи топлива
+settlement_size,-2.679383627450053e-05,total_fuel_sales,Продажи топлива
+price_DT_TANEKO,-2.9042004535092165e-05,total_fuel_sales,Продажи топлива
+is_rain,-4.653251909210917e-05,total_fuel_sales,Продажи топлива
+promotion_shop_active,-5.7153631583132615e-05,total_fuel_sales,Продажи топлива
+competitor_price_AI95,-6.9447113711818e-05,total_fuel_sales,Продажи топлива
+is_weekend,-0.00017049985148387403,total_fuel_sales,Продажи топлива
+temperature,-0.00035461816570632926,total_fuel_sales,Продажи топлива
+traffic_Truck_short,-0.0006035378943624788,total_fuel_sales,Продажи топлива
+traffic_Truck_long,-0.0006720695333983043,total_fuel_sales,Продажи топлива
+traffic_Undefined,-0.0010733619150923301,total_fuel_sales,Продажи топлива
+traffic_Truck,-0.0012632803845501472,total_fuel_sales,Продажи топлива
+visibility_km,-0.0012767514147967358,total_fuel_sales,Продажи топлива
+precipitation_mm,-0.002550166847084867,total_fuel_sales,Продажи топлива
+traffic_Passengers_cars,-0.0033311029969387653,total_fuel_sales,Продажи топлива
+total_traffic,0.46672746745101973,shop_total_revenue,Выручка магазина
+traffic_Truck,0.09248069548764899,shop_total_revenue,Выручка магазина
+shop_area_m2,0.059943693324315594,shop_total_revenue,Выручка магазина
+is_rush_hour,0.03098196210008915,shop_total_revenue,Выручка магазина
+traffic_Passengers_cars,0.025906694075050085,shop_total_revenue,Выручка магазина
+hour,0.009198418619185503,shop_total_revenue,Выручка магазина
+promotion_fuel_active,0.008664019153307945,shop_total_revenue,Выручка магазина
+traffic_Undefined,0.00820130273376544,shop_total_revenue,Выручка магазина
+is_snow,0.004358101939849202,shop_total_revenue,Выручка магазина
+traffic_Truck_short,0.0035209969198609636,shop_total_revenue,Выручка магазина
+price_DT_TANEKO,0.0028580831270415366,shop_total_revenue,Выручка магазина
+promotion_shop_active,0.002057269631207559,shop_total_revenue,Выручка магазина
+price_AI98,0.0016710131067729783,shop_total_revenue,Выручка магазина
+competitors_within_5km,0.0008278126588983081,shop_total_revenue,Выручка магазина
+day_of_week,0.0005344584707915878,shop_total_revenue,Выручка магазина
+corporate_customer_ratio,0.0004964171502058005,shop_total_revenue,Выручка магазина
+price_DT_SUMMER,0.0004730280795445981,shop_total_revenue,Выручка магазина
+traffic_Truck_long,0.0003695399389149016,shop_total_revenue,Выручка магазина
+competitor_price_AI92,0.00024542257943867735,shop_total_revenue,Выручка магазина
+competitor_price_DT,0.00020251675235113029,shop_total_revenue,Выручка магазина
+price_AI95,0.0001320025604237459,shop_total_revenue,Выручка магазина
+is_rain,0.00010576156615219971,shop_total_revenue,Выручка магазина
+station_id,8.947657603071886e-05,shop_total_revenue,Выручка магазина
+customer_loyalty_score,7.738693915545121e-05,shop_total_revenue,Выручка магазина
+precipitation_mm,6.697914071448115e-05,shop_total_revenue,Выручка магазина
+staff_engagement_score,6.225768524429724e-05,shop_total_revenue,Выручка магазина
+distance_to_city_km,1.5719030540243633e-05,shop_total_revenue,Выручка магазина
+ad_active,4.443139302405068e-06,shop_total_revenue,Выручка магазина
+direction,2.683071307278221e-06,shop_total_revenue,Выручка магазина
+quarter,0.0,shop_total_revenue,Выручка магазина
+traffic_Transporter,0.0,shop_total_revenue,Выручка магазина
+is_night,0.0,shop_total_revenue,Выручка магазина
+has_cafe,0.0,shop_total_revenue,Выручка магазина
+has_shop,0.0,shop_total_revenue,Выручка магазина
+season,0.0,shop_total_revenue,Выручка магазина
+holiday_name,0.0,shop_total_revenue,Выручка магазина
+is_holiday,0.0,shop_total_revenue,Выручка магазина
+is_fog,0.0,shop_total_revenue,Выручка магазина
+month,0.0,shop_total_revenue,Выручка магазина
+week_of_year,0.0,shop_total_revenue,Выручка магазина
+is_weekend,-2.6432701086450314e-06,shop_total_revenue,Выручка магазина
+has_car_wash,-1.7466942490755127e-05,shop_total_revenue,Выручка магазина
+weather_condition,-2.3184252114005766e-05,shop_total_revenue,Выручка магазина
+settlement_size,-2.4729121287148104e-05,shop_total_revenue,Выручка магазина
+price_DT_WINTER,-2.8297170442059816e-05,shop_total_revenue,Выручка магазина
+price_DT_EURO,-3.19336757674075e-05,shop_total_revenue,Выручка магазина
+ad_channel,-4.8816243597205045e-05,shop_total_revenue,Выручка магазина
+total_pumps,-5.790074037333633e-05,shop_total_revenue,Выручка магазина
+price_AI92,-5.9982799464249524e-05,shop_total_revenue,Выручка магазина
+road_type,-6.511182118436783e-05,shop_total_revenue,Выручка магазина
+temperature,-6.909107568298101e-05,shop_total_revenue,Выручка магазина
+wind_speed_ms,-0.000137558945738007,shop_total_revenue,Выручка магазина
+promotion_cafe_active,-0.00016832422989421225,shop_total_revenue,Выручка магазина
+competitor_price_AI95,-0.00024755675123137405,shop_total_revenue,Выручка магазина
+visibility_km,-0.0003572501885584778,shop_total_revenue,Выручка магазина
