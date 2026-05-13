@@ -1,0 +1,10 @@
+{
+  "model": "HistGradientBoostingRegressor baseline",
+  "target": "total_fuel_sales",
+  "train_rows": 200400,
+  "test_rows": 18600,
+  "mae": 4.4204603740258746,
+  "mse": 94.19264413836336,
+  "rmse": 9.705289492764415,
+  "r2": 0.9767037986524929
+}

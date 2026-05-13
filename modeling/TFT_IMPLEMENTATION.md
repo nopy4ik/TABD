@@ -1,121 +1,144 @@
 # TFT implementation plan
 
-## Текущее ограничение
+## Цель модели
 
-В этой среде нет `torch`, `pandas`, `numpy` и `pytorch_forecasting`, поэтому полноценное обучение TFT здесь не запускается.
+Обучить Temporal Fusion Transformer для почасового прогноза продаж сети АЗС. Модель должна использовать временные, погодные, рекламные, ценовые, трафиковые и статические признаки станции.
 
-## Что нужно сделать в Python-среде
+## Целевые переменные
 
-1. Установить зависимости:
-   - `torch`
-   - `pytorch-forecasting`
-   - `lightning`
-   - `pandas`
-   - `numpy`
-2. Сформировать train/validation/test split по времени.
-3. Обучить отдельные модели:
-   - по `total_fuel_sales`;
-   - по каждой фракции топлива;
-   - по `shop_total_revenue`.
-4. Сохранить checkpoint и конфигурацию.
-5. Сделать скрипт загрузки уже обученной модели.
-6. Экспортировать прогноз в CSV для Power BI.
+Основная цель первой версии:
 
-## Минимальная схема обучения
+- `total_fuel_sales`
 
-- `target`: `total_fuel_sales`
-- дополнительные цели:
-  - `sales_AI92`
-  - `sales_AI95`
-  - `sales_AI98`
-  - `sales_DT_EURO`
-  - `sales_DT_TANEKO`
-  - `sales_DT_SUMMER`
-  - `sales_DT_WINTER`
-  - `shop_total_revenue`
-- static covariates:
-  - тип дороги;
-  - направление;
-  - удаленность;
-  - число колонок;
-  - сервисы;
-  - базовые цены;
-  - customer / staff scores.
-- time-varying known inputs:
-  - календарь;
-  - сезон;
-  - праздники;
-  - час;
-  - день недели;
-  - погода;
-  - рекламные флаги;
-  - акции;
-  - цены конкурентов.
-- time-varying observed inputs:
-  - трафик по типам;
-  - фактические продажи;
-  - выручка магазина.
+Дополнительные цели для следующих запусков:
 
-## Рекомендуемый split
+- `sales_AI92`
+- `sales_AI95`
+- `sales_AI98`
+- `sales_DT_EURO`
+- `sales_DT_TANEKO`
+- `sales_DT_SUMMER`
+- `sales_DT_WINTER`
+- `shop_total_revenue`
 
-- train: первые 70 процентов времени;
-- validation: следующие 15 процентов;
-- test: последние 15 процентов;
-- для каждой станции использовать один и тот же временной срез.
+## Признаки
 
-## Конфигурация модели
+Static categoricals:
 
-- `max_encoder_length`: 30-60 часов;
-- `max_prediction_length`: 24-72 часа;
-- `hidden_size`: 16-64;
-- `attention_head_size`: 4-8;
-- `dropout`: 0.1-0.3;
-- `loss`: QuantileLoss или MSE для baseline.
+- `station_id`
+- `road_type`
+- `direction`
+- `settlement_size`
 
-## Артефакты, которые стоит сохранить
+Static reals:
 
-- `tft_checkpoint.ckpt`
-- `tft_config.json`
-- `feature_mapping.json`
-- `forecast.csv`
-- `metrics.json`
+- `distance_to_city_km`
+- `total_pumps`
+- `shop_area_m2`
+- `has_car_wash`
+- `has_cafe`
+- `has_shop`
+- `competitors_within_5km`
+- `corporate_customer_ratio`
+- `staff_engagement_score`
+- `customer_loyalty_score`
 
-## Входы для TFT
+Time-varying known categoricals:
 
-- статические признаки станции;
-- погодные признаки;
-- трафик по типам транспорта;
-- акции и реклама;
-- цены конкурентов;
-- собственные цены;
-- календарные признаки.
+- `season`
+- `weather_condition`
+- `ad_channel`
+- `holiday_name`
 
-## Выходы
+Time-varying known reals:
 
-- прогноз `total_fuel_sales`;
-- прогноз по типам топлива;
-- прогноз `shop_total_revenue`;
-- интервалы неопределенности;
-- feature importance / variable selection scores.
+- `hour`
+- `day_of_week`
+- `week_of_year`
+- `month`
+- `quarter`
+- `is_weekend`
+- `is_holiday`
+- `is_rush_hour`
+- `is_night`
+- `temperature`
+- `precipitation_mm`
+- `visibility_km`
+- `wind_speed_ms`
+- `is_snow`
+- `is_rain`
+- `is_fog`
+- `promotion_fuel_active`
+- `promotion_shop_active`
+- `promotion_cafe_active`
+- `ad_active`
+- `competitor_price_AI92`
+- `competitor_price_AI95`
+- `competitor_price_DT`
+- `price_AI92`
+- `price_AI95`
+- `price_AI98`
+- `price_DT_EURO`
+- `price_DT_TANEKO`
+- `price_DT_SUMMER`
+- `price_DT_WINTER`
 
-## Что показать в dashboard после обучения
+Time-varying observed reals:
 
+- `traffic_Passengers_cars`
+- `traffic_Truck_short`
+- `traffic_Truck`
+- `traffic_Truck_long`
+- `traffic_Transporter`
+- `traffic_Undefined`
+- `total_traffic`
+- целевая переменная и лаги целевой переменной
+
+## Split
+
+Данные почасовые за 2023 год. Разбивка должна идти по времени, одинаково для всех станций:
+
+- train: январь-сентябрь;
+- validation: октябрь-ноябрь;
+- test: декабрь.
+
+Такой split сохраняет временной порядок и проверяет прогноз на будущем периоде.
+
+## Метрики
+
+Обязательные метрики:
+
+- `MAE`
+- `MSE`
+- `RMSE`
+- `R2`
+
+Дополнительно можно добавить:
+
+- `MAPE`, если нет проблем с нулевыми значениями;
+- ошибки по станциям;
+- ошибки по часам суток;
+- ошибки по типам топлива.
+
+## Артефакты
+
+Сохраняем:
+
+- checkpoint модели;
+- JSON-конфиг;
+- прогнозы на test/horizon;
+- метрики;
+- важность признаков или variable selection scores;
+- рекомендации для dashboard.
+
+## Dashboard
+
+Dash должен показывать:
+
+- обзор сети АЗС и фильтры по станции/периоду;
+- динамику `total_fuel_sales`, топлива по типам и `shop_total_revenue`;
+- влияние рекламы, акций, трафика, погоды и цен конкурентов;
 - actual vs forecast;
-- forecast horizon;
-- ошибки прогноза;
-- влияние признаков;
-- рекомендации по станциям и временным слотам.
-
-## Как связать с Power BI
-
-1. Сохрани `forecast.csv` с полями:
-   - `timestamp`
-   - `station_id`
-   - `target`
-   - `forecast`
-   - `lower_bound`
-   - `upper_bound`
-   - `model_version`
-2. Загрузи `forecast.csv` в Power BI.
-3. Свяжи его по `station_id` и дате с календарной таблицей.
-4. Покажи actual vs forecast на отдельной странице.
+- метрики модели;
+- важность признаков;
+- рекомендации по станциям.

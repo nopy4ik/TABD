@@ -1,0 +1,8 @@
+pandas
+numpy
+scikit-learn
+torch
+lightning
+pytorch-forecasting
+dash==2.18.2
+plotly

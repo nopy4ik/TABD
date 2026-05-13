@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 *.tmp
 *.log
+~$*.docx
 .venv/
 venv/
 
