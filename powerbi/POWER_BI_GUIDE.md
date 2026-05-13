@@ -19,12 +19,17 @@
 3. `derived/station_kpis.csv` как витрину для ранжирования АЗС.
 4. `derived/daily_kpis.csv` как витрину для трендов.
 5. `derived/hourly_kpis.csv` как витрину для часовых паттернов.
+6. `derived/date_dimension.csv` как календарную таблицу.
+7. `derived/station_recommendations.csv` как таблицу рекомендаций.
+8. `derived/forecast_template.csv` как заготовку под будущие прогнозы TFT.
 
 ## Модель
 
 - `detailed_data` - центральная таблица.
 - `stations_metadata` - dimension по `station_id`.
-- `Date` - отдельная календарная таблица.
+- `date_dimension` - отдельная календарная таблица.
+- `station_recommendations` - витрина для action list по станциям.
+- `forecast_template` - заглушка для будущих forecast rows.
 
 ## DAX меры
 
@@ -129,6 +134,22 @@ Price Gap DT = AVERAGEX(detailed_data, detailed_data[price_DT_WINTER] - detailed
 - где стоит усилить рекламу;
 - где имеет смысл развивать сопутствующие услуги.
 
+### 6. Forecast
+
+Что добавить:
+
+- line chart actual vs forecast;
+- band chart с `lower_bound` и `upper_bound`;
+- table по ошибкам прогноза;
+- slicer по горизонту прогноза и станции;
+- KPI по качеству прогноза.
+
+Что показать:
+
+- насколько хорошо TFT повторяет фактические продажи;
+- где модель ошибается сильнее всего;
+- какие станции требуют отдельной перенастройки.
+
 ## Ручные шаги в Power BI
 
 1. Импортируй CSV-файлы.
@@ -137,7 +158,8 @@ Price Gap DT = AVERAGEX(detailed_data, detailed_data[price_DT_WINTER] - detailed
 4. Добавь меры DAX.
 5. Собери визуалы по страницам выше.
 6. Протестируй фильтры и drill-down.
-7. Экспортируй `.pbix` или `.pbit`.
+7. Подключи таблицу прогноза, когда она появится.
+8. Экспортируй `.pbix` или `.pbit`.
 
 ## Если будет готов TFT
 
@@ -151,3 +173,11 @@ Price Gap DT = AVERAGEX(detailed_data, detailed_data[price_DT_WINTER] - detailed
 - confidence band;
 - таблицу ошибок прогноза;
 - KPI по MAE / MAPE / RMSE.
+
+## Рекомендации по использованию витрин
+
+- `station_recommendations.csv` удобно вывести в таблицу с условным форматированием по `priority_score`.
+- `date_dimension.csv` лучше сделать основной календарной таблицей, а не строить дату прямо из `timestamp`.
+- `hourly_kpis.csv` хорошо подходит для графика суточного профиля спроса.
+- `daily_kpis.csv` лучше использовать для трендов и сезонности.
+- `forecast_template.csv` уже имеет форму, удобную для последующей подстановки фактического прогноза TFT.
