@@ -7,11 +7,13 @@
 - [x] Добавить документацию для Power BI
 - [x] Подготовить скрипт для агрегированных витрин
 - [x] Сгенерировать сводные таблицы для Power BI
+- [x] Настроить локальный SSH-ключ и SSH remote для GitHub
 - [ ] Обучить TFT и сохранить модель
 - [ ] Собрать dashboard в Power BI Desktop
 - [ ] Подключить прогнозы TFT к dashboard
 - [ ] Опубликовать или выгрузить `.pbix` для передачи
-- [ ] Настроить git remote и push в GitHub `nopy4ik`
+- [ ] Добавить SSH public key в GitHub `nopy4ik`
+- [ ] Сделать `git push` по SSH в GitHub `nopy4ik`
 
 ## Блокер по push
 
