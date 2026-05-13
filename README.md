@@ -7,6 +7,7 @@
 - `_задание/` - исходные CSV, PDF и DOCX из задания.
 - `powerbi/` - спецификация dashboard, список визуализаций и DAX-мер.
 - `modeling/` - план обучения TFT и список того, что нужно будет сделать вручную в Python-среде.
+- `notebooks/` - Colab-шаблон для обучения TFT и сохранения модели.
 - `scripts/` - утилита для подготовки агрегированных таблиц под Power BI.
 - `derived/` - автоматически сгенерированные сводные CSV для импорта в Power BI.
 
@@ -19,7 +20,8 @@
 - разобрал текст задания и описание данных;
 - выделил главную факт-таблицу `detailed_data.csv` и таблицу статических атрибутов `stations_metadata.csv`;
 - подготовил план dashboard по страницам;
-- добавил скрипт для генерации сводных таблиц и уже сгенерировал `derived/`:
+- добавил скрипт для генерации сводных таблиц и уже сгенерировал `derived/`;
+- создал Colab-ноутбук для обучения TFT: `notebooks/tft_training_colab.ipynb`
 
 ```bash
 python3 scripts/build_powerbi_assets.py
@@ -37,6 +39,7 @@ python3 scripts/build_powerbi_assets.py
 ## Что останется сделать вручную
 
 - обучить TFT в Python-среде с `torch` и `pytorch-forecasting`;
+- открыть `notebooks/tft_training_colab.ipynb` в Colab и запустить обучение;
 - сохранить checkpoint и файл для повторной загрузки модели;
 - выгрузить прогнозы в CSV и подключить их к Power BI;
 - собрать `.pbix`/`.pbit` в Power BI Desktop;
