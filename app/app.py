@@ -48,6 +48,48 @@ SHOP_COLUMNS = [
     "shop_табак",
 ]
 
+FUEL_LABELS = {
+    "sales_AI92": "АИ-92",
+    "sales_AI95": "АИ-95",
+    "sales_AI98": "АИ-98",
+    "sales_DT_EURO": "ДТ Евро+",
+    "sales_DT_TANEKO": "ДТ ТАНЕКО",
+    "sales_DT_SUMMER": "ДТ летнее",
+    "sales_DT_WINTER": "ДТ зимнее",
+}
+
+SHOP_LABELS = {
+    "shop_напитки": "Напитки",
+    "shop_закуски": "Закуски",
+    "shop_автотовары": "Автотовары",
+    "shop_кофе": "Кофе",
+    "shop_табак": "Табак",
+}
+
+FEATURE_LABELS = {
+    "total_traffic": "Суммарный трафик",
+    "hour": "Час суток",
+    "day_of_week": "День недели",
+    "temperature": "Температура",
+    "promotion_fuel_active": "Акция на топливо",
+    "promotion_shop_active": "Акция на товары",
+    "promotion_cafe_active": "Акция на кафе",
+    "ad_active": "Реклама активна",
+    "price_AI92": "Цена АИ-92",
+    "price_AI95": "Цена АИ-95",
+    "price_DT_WINTER": "Цена ДТ зимнее",
+    "competitor_price_AI92": "Цена конкурента АИ-92",
+    "competitor_price_AI95": "Цена конкурента АИ-95",
+    "competitor_price_DT": "Цена конкурента ДТ",
+    "traffic_Passengers_cars": "Трафик легковых",
+    "traffic_Truck": "Трафик грузовых",
+    "traffic_Truck_long": "Трафик тяжелых грузовых",
+    "is_weekend": "Выходной день",
+    "is_holiday": "Праздник",
+    "is_rush_hour": "Час пик",
+    "is_night": "Ночное время",
+}
+
 DAY_NAMES = {
     0: "Понедельник",
     1: "Вторник",
@@ -69,19 +111,26 @@ def load_source() -> pd.DataFrame:
 
 
 def load_metrics() -> pd.DataFrame:
-    """Загружает метрики модели; поддерживает старый и новый формат JSON."""
+    """Загружает метрики baseline и TFT; поддерживает разные JSON-форматы."""
 
-    path = ARTIFACTS_DIR / "metrics" / "baseline_metrics.json"
-    if not path.exists():
-        return pd.DataFrame()
+    rows = []
+    for path in [
+        ARTIFACTS_DIR / "metrics" / "baseline_metrics.json",
+        ARTIFACTS_DIR / "metrics" / "tft_metrics.json",
+    ]:
+        if not path.exists():
+            continue
 
-    with path.open("r", encoding="utf-8") as fh:
-        data = json.load(fh)
+        with path.open("r", encoding="utf-8") as fh:
+            data = json.load(fh)
 
-    # Первая версия сохраняла один dict, новая версия сохраняет список dict.
-    if isinstance(data, dict):
-        data = [data]
-    return pd.DataFrame(data)
+        # Baseline сохраняет список, TFT сохраняет один словарь.
+        if isinstance(data, dict):
+            rows.append(data)
+        else:
+            rows.extend(data)
+
+    return pd.DataFrame(rows)
 
 
 def load_optional_csv(path: Path, parse_dates: list[str] | None = None) -> pd.DataFrame:
@@ -122,6 +171,18 @@ def empty_figure(title: str) -> go.Figure:
 source_df = load_source()
 forecast_df = load_optional_csv(
     ARTIFACTS_DIR / "forecasts" / "baseline_forecast.csv",
+    parse_dates=["timestamp"],
+)
+future_baseline_df = load_optional_csv(
+    ARTIFACTS_DIR / "forecasts" / "baseline_future_forecast.csv",
+    parse_dates=["timestamp"],
+)
+tft_backtest_df = load_optional_csv(
+    ARTIFACTS_DIR / "forecasts" / "tft_backtest_forecast.csv",
+    parse_dates=["timestamp"],
+)
+tft_future_df = load_optional_csv(
+    ARTIFACTS_DIR / "forecasts" / "tft_future_forecast.csv",
     parse_dates=["timestamp"],
 )
 importance_df = load_optional_csv(ARTIFACTS_DIR / "metrics" / "baseline_feature_importance.csv")
@@ -189,6 +250,8 @@ app.layout = html.Div(
                             [
                                 dcc.Graph(id="fuel-forecast-graph"),
                                 dcc.Graph(id="shop-forecast-graph"),
+                                dcc.Graph(id="future-fuel-graph"),
+                                dcc.Graph(id="future-shop-graph"),
                                 dcc.Graph(id="forecast-error-graph"),
                             ],
                             className="grid",
@@ -241,6 +304,8 @@ app.layout = html.Div(
     Output("promo-weather-graph", "figure"),
     Output("fuel-forecast-graph", "figure"),
     Output("shop-forecast-graph", "figure"),
+    Output("future-fuel-graph", "figure"),
+    Output("future-shop-graph", "figure"),
     Output("forecast-error-graph", "figure"),
     Output("metrics-bar-graph", "figure"),
     Output("station-error-graph", "figure"),
@@ -277,15 +342,21 @@ def update_dashboard(station_id: int):
         )
     )
     daily_sales_fig = px.line(
-        daily,
+        daily.rename(
+            columns={
+                "total_fuel_sales": "Продажи топлива",
+                "shop_total_revenue": "Выручка магазина",
+            }
+        ),
         x="date",
-        y=["total_fuel_sales", "shop_total_revenue"],
+        y=["Продажи топлива", "Выручка магазина"],
         title=f"Динамика продаж и товаров: {station_name}",
         template="plotly_white",
     )
 
     fuel_mix = station_data[FUEL_COLUMNS].sum().reset_index()
     fuel_mix.columns = ["fuel_type", "sales"]
+    fuel_mix["fuel_type"] = fuel_mix["fuel_type"].map(FUEL_LABELS)
     fuel_mix_fig = px.pie(
         fuel_mix,
         names="fuel_type",
@@ -296,6 +367,7 @@ def update_dashboard(station_id: int):
 
     shop_mix = station_data[SHOP_COLUMNS].sum().reset_index()
     shop_mix.columns = ["category", "revenue"]
+    shop_mix["category"] = shop_mix["category"].map(SHOP_LABELS)
     shop_mix_fig = px.bar(
         shop_mix,
         x="category",
@@ -321,31 +393,92 @@ def update_dashboard(station_id: int):
         template="plotly_white",
     )
 
-    if forecast_df.empty:
+    station_forecast = forecast_df[forecast_df["station_id"] == station_id].copy() if not forecast_df.empty else pd.DataFrame()
+    station_tft_backtest = (
+        tft_backtest_df[tft_backtest_df["station_id"].astype(str) == str(station_id)].copy()
+        if not tft_backtest_df.empty
+        else pd.DataFrame()
+    )
+    station_tft_future = (
+        tft_future_df[tft_future_df["station_id"].astype(str) == str(station_id)].copy()
+        if not tft_future_df.empty
+        else pd.DataFrame()
+    )
+    station_future_baseline = (
+        future_baseline_df[future_baseline_df["station_id"] == station_id].copy()
+        if not future_baseline_df.empty
+        else pd.DataFrame()
+    )
+
+    if forecast_df.empty and station_tft_backtest.empty:
         fuel_forecast_fig = empty_figure("Сначала запустите scripts/train_baseline.py")
         shop_forecast_fig = empty_figure("Сначала запустите scripts/train_baseline.py")
+        future_fuel_fig = empty_figure("Будущий прогноз появится после обучения")
+        future_shop_fig = empty_figure("Будущий прогноз появится после обучения")
         forecast_error_fig = empty_figure("Ошибки прогноза появятся после обучения")
     else:
-        station_forecast = forecast_df[forecast_df["station_id"] == station_id].copy()
-        fuel_forecast = station_forecast[station_forecast["target"] == "total_fuel_sales"]
+        if not station_tft_backtest.empty:
+            fuel_forecast = station_tft_backtest
+            fuel_title = "Проверка TFT на декабре: факт против прогноза топлива"
+        else:
+            fuel_forecast = station_forecast[station_forecast["target"] == "total_fuel_sales"]
+            fuel_title = "Проверка baseline на декабре: факт против прогноза топлива"
         shop_forecast = station_forecast[station_forecast["target"] == "shop_total_revenue"]
 
         fuel_forecast_fig = px.line(
-            fuel_forecast,
+            fuel_forecast.rename(columns={"actual": "Факт", "prediction": "Прогноз"}),
             x="timestamp",
-            y=["actual", "prediction"],
-            title="Прогноз продаж топлива: факт против прогноза",
+            y=["Факт", "Прогноз"],
+            title=fuel_title,
             template="plotly_white",
         )
         shop_forecast_fig = px.line(
-            shop_forecast,
+            shop_forecast.rename(columns={"actual": "Факт", "prediction": "Прогноз"}),
             x="timestamp",
-            y=["actual", "prediction"],
-            title="Прогноз выручки магазина: факт против прогноза",
+            y=["Факт", "Прогноз"],
+            title="Проверка baseline на декабре: факт против прогноза выручки магазина",
             template="plotly_white",
         )
 
-        error_data = station_forecast.copy()
+        if not station_tft_future.empty:
+            future_fuel_fig = px.line(
+                station_tft_future,
+                x="timestamp",
+                y="prediction",
+                title="Будущий прогноз продаж топлива TFT после 2023-12-31",
+                labels={"timestamp": "Дата и время", "prediction": "Прогноз"},
+                template="plotly_white",
+            )
+        else:
+            future_fuel = station_future_baseline[station_future_baseline["target"] == "total_fuel_sales"]
+            future_fuel_fig = px.line(
+                future_fuel,
+                x="timestamp",
+                y="prediction",
+                title="Будущий прогноз продаж топлива baseline после 2023-12-31",
+                labels={"timestamp": "Дата и время", "prediction": "Прогноз"},
+                template="plotly_white",
+            )
+
+        future_shop = station_future_baseline[station_future_baseline["target"] == "shop_total_revenue"]
+        future_shop_fig = px.line(
+            future_shop,
+            x="timestamp",
+            y="prediction",
+            title="Будущий прогноз выручки магазина baseline после 2023-12-31",
+            labels={"timestamp": "Дата и время", "prediction": "Прогноз"},
+            template="plotly_white",
+        )
+
+        error_data = pd.concat(
+            [
+                station_forecast,
+                station_tft_backtest.assign(target_label="Продажи топлива TFT")
+                if not station_tft_backtest.empty
+                else pd.DataFrame(),
+            ],
+            ignore_index=True,
+        )
         error_data["abs_error"] = (error_data["actual"] - error_data["prediction"]).abs()
         error_data = (
             error_data.groupby(["target_label", "hour"], as_index=False)
@@ -384,11 +517,21 @@ def update_dashboard(station_id: int):
         recommendation_panel = html.Div("Рекомендации появятся после обучения модели.")
         recommendation_table = html.Div()
     else:
+        recommendation_columns = {
+            "station_id": "ID АЗС",
+            "station_name": "Название АЗС",
+            "actual_mean": "Средний факт",
+            "prediction_mean": "Средний прогноз",
+            "mae": "MAE",
+            "gap": "Смещение",
+            "recommendation": "Рекомендация",
+        }
         station_error_fig = px.bar(
             recommendations_df.sort_values("mae", ascending=False),
             x="station_name",
             y="mae",
             title="MAE прогноза топлива по станциям",
+            labels={"station_name": "АЗС", "mae": "MAE"},
             template="plotly_white",
         )
         station_error_fig.update_layout(xaxis_tickangle=-45)
@@ -414,9 +557,10 @@ def update_dashboard(station_id: int):
                 ]
             )
 
+        recommendation_display = recommendations_df.rename(columns=recommendation_columns)
         recommendation_table = dash_table.DataTable(
-            data=recommendations_df.to_dict("records"),
-            columns=[{"name": col, "id": col} for col in recommendations_df.columns],
+            data=recommendation_display.to_dict("records"),
+            columns=[{"name": col, "id": col} for col in recommendation_display.columns],
             page_size=10,
             sort_action="native",
             filter_action="native",
@@ -428,12 +572,15 @@ def update_dashboard(station_id: int):
         importance_fig = empty_figure("Важность признаков появится после обучения")
     else:
         top_importance = importance_df[importance_df["target"] == "total_fuel_sales"].head(20)
+        top_importance = top_importance.copy()
+        top_importance["feature_label"] = top_importance["feature"].map(FEATURE_LABELS).fillna(top_importance["feature"])
         importance_fig = px.bar(
             top_importance,
             x="importance",
-            y="feature",
+            y="feature_label",
             orientation="h",
             title="Top-20 важных признаков для прогноза топлива",
+            labels={"importance": "Важность", "feature_label": "Признак"},
             template="plotly_white",
         )
         importance_fig.update_layout(yaxis={"categoryorder": "total ascending"})
@@ -443,9 +590,9 @@ def update_dashboard(station_id: int):
         .agg(total_fuel_sales=("total_fuel_sales", "mean"), total_traffic=("total_traffic", "mean"))
     )
     traffic_hour_fig = px.bar(
-        traffic_hour,
+        traffic_hour.rename(columns={"total_fuel_sales": "Продажи топлива", "total_traffic": "Трафик"}),
         x="hour",
-        y=["total_fuel_sales", "total_traffic"],
+        y=["Продажи топлива", "Трафик"],
         barmode="group",
         title="Средние продажи и трафик по часам",
         template="plotly_white",
@@ -459,6 +606,8 @@ def update_dashboard(station_id: int):
         promo_weather_fig,
         fuel_forecast_fig,
         shop_forecast_fig,
+        future_fuel_fig,
+        future_shop_fig,
         forecast_error_fig,
         metrics_bar_fig,
         station_error_fig,

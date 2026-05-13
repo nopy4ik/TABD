@@ -38,6 +38,7 @@ TARGETS = {
     "total_fuel_sales": "Продажи топлива",
     "shop_total_revenue": "Выручка магазина",
 }
+FUTURE_DAYS = 7
 
 # Категориальные признаки кодируются OrdinalEncoder.
 # Для baseline этого достаточно, а TFT позже будет использовать свои энкодеры.
@@ -234,12 +235,50 @@ def build_recommendations(forecast: pd.DataFrame) -> pd.DataFrame:
     return station_errors.sort_values("mae", ascending=False)
 
 
-def train_target(train: pd.DataFrame, test: pd.DataFrame, target: str) -> tuple[pd.DataFrame, dict, pd.DataFrame]:
+def make_future_frame(df: pd.DataFrame) -> pd.DataFrame:
+    """Создает сценарные будущие признаки на 7 дней после 2023-12-31.
+
+    Это не изменение исходных данных. Мы берем последнюю наблюдаемую неделю как
+    шаблон поведения и переносим ее на 2024-01-01...2024-01-07.
+    """
+
+    future_parts = []
+    future_hours = FUTURE_DAYS * 24
+    for station_id, station_df in df.groupby("station_id"):
+        station_df = station_df.sort_values("timestamp")
+        template = station_df.tail(future_hours).copy()
+        last_timestamp = station_df["timestamp"].max()
+        template["timestamp"] = pd.date_range(
+            last_timestamp + pd.Timedelta(hours=1),
+            periods=future_hours,
+            freq="h",
+        )
+        template["hour"] = template["timestamp"].dt.hour
+        template["day_of_week"] = template["timestamp"].dt.dayofweek
+        template["week_of_year"] = template["timestamp"].dt.isocalendar().week.astype(int)
+        template["month"] = template["timestamp"].dt.month
+        template["quarter"] = template["timestamp"].dt.quarter
+        template["is_weekend"] = template["timestamp"].dt.dayofweek.isin([5, 6]).astype(int)
+        template["is_holiday"] = template["timestamp"].dt.strftime("%m-%d").isin(["01-01", "01-02", "01-03"]).astype(int)
+        template["holiday_name"] = np.where(template["is_holiday"] == 1, "Новогодние праздники", "нет")
+        template["season"] = "winter"
+        template["is_rush_hour"] = template["hour"].isin([7, 8, 9, 17, 18, 19]).astype(int)
+        template["is_night"] = ((template["hour"] >= 22) | (template["hour"] <= 5)).astype(int)
+        future_parts.append(template)
+
+    future = pd.concat(future_parts, ignore_index=True)
+    for col in CATEGORICAL_FEATURES:
+        future[col] = future[col].fillna("none").astype(str)
+    return future
+
+
+def train_target(train: pd.DataFrame, test: pd.DataFrame, future: pd.DataFrame, target: str) -> tuple[pd.DataFrame, pd.DataFrame, dict, pd.DataFrame]:
     """Обучает одну модель для одной целевой переменной."""
 
     model = build_model()
     model.fit(train[FEATURES], train[target])
     predictions = model.predict(test[FEATURES])
+    future_predictions = model.predict(future[FEATURES])
 
     metrics = calculate_metrics(test[target], predictions)
     metrics.update(
@@ -272,8 +311,14 @@ def train_target(train: pd.DataFrame, test: pd.DataFrame, target: str) -> tuple[
     forecast["target_label"] = TARGETS[target]
     forecast["model_version"] = "baseline_hgb_v2"
 
+    future_forecast = future[["timestamp", "station_id", "station_name"]].copy()
+    future_forecast["prediction"] = future_predictions
+    future_forecast["target"] = target
+    future_forecast["target_label"] = TARGETS[target]
+    future_forecast["model_version"] = "baseline_hgb_v2"
+
     importance = export_feature_importance(model, test, target)
-    return forecast, metrics, importance
+    return forecast, future_forecast, metrics, importance
 
 
 def main() -> None:
@@ -282,22 +327,27 @@ def main() -> None:
     ensure_dirs()
     df = load_data()
     train, test = split_by_time(df)
+    future = make_future_frame(df)
 
     forecasts = []
+    future_forecasts = []
     metrics = []
     importances = []
 
     for target in TARGETS:
-        forecast, target_metrics, importance = train_target(train, test, target)
+        forecast, future_forecast, target_metrics, importance = train_target(train, test, future, target)
         forecasts.append(forecast)
+        future_forecasts.append(future_forecast)
         metrics.append(target_metrics)
         importances.append(importance)
 
     forecast_df = pd.concat(forecasts, ignore_index=True)
+    future_forecast_df = pd.concat(future_forecasts, ignore_index=True)
     importance_df = pd.concat(importances, ignore_index=True)
     recommendations = build_recommendations(forecast_df)
 
     forecast_df.to_csv(ARTIFACTS_DIR / "forecasts" / "baseline_forecast.csv", index=False)
+    future_forecast_df.to_csv(ARTIFACTS_DIR / "forecasts" / "baseline_future_forecast.csv", index=False)
     importance_df.to_csv(ARTIFACTS_DIR / "metrics" / "baseline_feature_importance.csv", index=False)
     recommendations.to_csv(
         ARTIFACTS_DIR / "recommendations" / "station_recommendations.csv",

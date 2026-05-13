@@ -1,0 +1,19 @@
+{
+  "model_version": "tft_total_fuel_sales_v1",
+  "source_data": "_задание/5stations_data.csv",
+  "target": "total_fuel_sales",
+  "max_encoder_length": 48,
+  "max_prediction_length": 24,
+  "future_days": 1,
+  "metrics": {
+    "model": "Temporal Fusion Transformer",
+    "model_version": "tft_total_fuel_sales_v1",
+    "target": "total_fuel_sales",
+    "target_label": "Продажи топлива TFT",
+    "mae": 26.8606549504001,
+    "mse": 2217.6117352818937,
+    "rmse": 47.09152508978546,
+    "r2": 0.5461002694881882,
+    "rows": 120
+  }
+}

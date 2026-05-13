@@ -33,16 +33,18 @@
 - Baseline строит прогнозы по двум целям:
   - `total_fuel_sales` - продажи топлива;
   - `shop_total_revenue` - выручка магазина.
+- Добавлен и запущен TFT-пайплайн `scripts/train_tft.py`.
+- TFT обучена для `total_fuel_sales` на компактном наборе `_задание/5stations_data.csv`.
 - Dashboard показывает аналитику, прогнозы, метрики, важность признаков и рекомендации.
 - Отчет по лабораторной ведется в `reports/lab_report.md`.
 
-## Что остается для TFT
+## Что остается улучшить
 
 1. Провести EDA по продажам топлива, сопутствующим товарам, трафику, погоде, акциям, рекламе и ценам конкурентов.
 2. Подготовить признаки для TFT без изменения исходных CSV.
-3. Обучить TFT-модель:
-   - основная цель: `total_fuel_sales`;
-   - дополнительные цели: продажи по видам топлива и `shop_total_revenue`.
+3. Расширить TFT-модель:
+   - сейчас TFT обучена на `total_fuel_sales`;
+   - дальше можно обучить отдельные TFT для продаж по видам топлива и `shop_total_revenue`.
 4. Сохранить обученную модель, конфигурацию и возможность повторного инференса.
 5. Посчитать метрики `MAE`, `MSE`, `RMSE`, `R2`.
 6. Сохранить прогнозы и интерпретацию признаков.
@@ -59,15 +61,17 @@
 Текущие baseline-артефакты:
 
 - `artifacts/forecasts/baseline_forecast.csv` - факт/прогноз по топливу и товарам.
+- `artifacts/forecasts/baseline_future_forecast.csv` - будущий сценарный прогноз на 7 дней.
 - `artifacts/metrics/baseline_metrics.json` - `MAE`, `MSE`, `RMSE`, `R2`.
 - `artifacts/metrics/baseline_feature_importance.csv` - важность признаков.
 - `artifacts/recommendations/station_recommendations.csv` - рекомендации по станциям.
 
-Планируемые TFT-артефакты:
+TFT-артефакты:
 
 - `artifacts/models/tft_total_fuel_sales.ckpt`
 - `artifacts/models/tft_config.json`
-- `artifacts/forecasts/tft_forecast.csv`
+- `artifacts/forecasts/tft_backtest_forecast.csv`
+- `artifacts/forecasts/tft_future_forecast.csv`
 - `artifacts/metrics/tft_metrics.json`
 - `artifacts/figures/*.html` или `*.png`
 - `artifacts/recommendations/station_recommendations.csv`
@@ -86,13 +90,19 @@ python -m pip install -r requirements.txt
 python scripts/train_baseline.py
 ```
 
-Шаг 2. Запустить dashboard:
+Шаг 2. Обучить или обновить TFT-прогноз топлива:
+
+```bash
+python scripts/train_tft.py
+```
+
+Шаг 3. Запустить dashboard:
 
 ```bash
 python app/app.py
 ```
 
-Шаг 3. Открыть в браузере:
+Шаг 4. Открыть в браузере:
 
 ```text
 http://127.0.0.1:8050/
@@ -101,10 +111,13 @@ http://127.0.0.1:8050/
 ## Порядок файлов
 
 1. `scripts/train_baseline.py` читает `_задание/detailed_data.csv`, обучает модели, сохраняет артефакты в `artifacts/`.
-2. `app/app.py` читает исходные данные и файлы из `artifacts/`, затем строит интерактивный dashboard.
-3. `reports/lab_report.md` описывает ход лабораторной: что запускалось, зачем и какой результат получен.
-4. `scripts/train_tft.py` пока проверяет окружение для будущей TFT-реализации.
+2. `scripts/train_tft.py` обучает TFT для продаж топлива, сохраняет веса, backtest и будущий прогноз.
+3. `app/app.py` читает исходные данные и файлы из `artifacts/`, затем строит интерактивный dashboard.
+4. `reports/lab_report.md` описывает ход лабораторной: что запускалось, зачем и какой результат получен.
 
-## Текущий блокер TFT
+## Важно про прогнозы
 
-Dash и baseline работают. Для полноценного TFT нужно довести локальное ML-окружение до состояния, где стабильно импортируются `torch`, `lightning` и `pytorch_forecasting`. После этого baseline можно заменить на настоящую TFT-модель, сохранив тот же формат артефактов для dashboard.
+В dashboard разделены две разные вещи:
+
+- проверка на декабре 2023 года: факт против прогноза, нужна для метрик;
+- будущий прогноз после 2023-12-31: сценарный прогноз без фактических значений.
