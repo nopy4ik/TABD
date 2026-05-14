@@ -1,0 +1,11 @@
+{
+  "model": "Temporal Fusion Transformer",
+  "model_version": "tft_shop_total_revenue",
+  "target": "shop_total_revenue",
+  "target_label": "Выручка магазина TFT",
+  "mae": 124.66666666666667,
+  "mse": 92046.7,
+  "rmse": 303.39199066554147,
+  "r2": -0.20314742275841957,
+  "rows": 120
+}

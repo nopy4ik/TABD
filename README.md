@@ -36,6 +36,7 @@
 - Добавлен и запущен TFT-пайплайн `scripts/train_tft.py`.
 - TFT обучена для `total_fuel_sales` на компактном наборе `_задание/5stations_data.csv`.
 - Dashboard показывает аналитику, прогнозы, метрики, важность признаков и рекомендации.
+- В дашборде добавлен переключатель `baseline / TFT / авто`.
 - Отчет по лабораторной ведется в `reports/lab_report.md`.
 
 ## Что остается улучшить
@@ -96,6 +97,12 @@ python scripts/train_baseline.py
 python scripts/train_tft.py
 ```
 
+Можно продолжить обучение из сохраненного чекпоинта и задать число эпох:
+
+```bash
+python scripts/train_tft.py --epochs 12
+```
+
 Шаг 3. Запустить dashboard:
 
 ```bash
@@ -112,7 +119,7 @@ http://127.0.0.1:8050/
 
 1. `scripts/train_baseline.py` читает `_задание/detailed_data.csv`, обучает модели, сохраняет артефакты в `artifacts/`.
 2. `scripts/train_tft.py` обучает TFT для продаж топлива, сохраняет веса, backtest и будущий прогноз.
-3. `app/app.py` читает исходные данные и файлы из `artifacts/`, затем строит интерактивный dashboard.
+3. `app/app.py` читает исходные данные и файлы из `artifacts/`, затем строит интерактивный dashboard с переключением baseline/TFT.
 4. `reports/lab_report.md` описывает ход лабораторной: что запускалось, зачем и какой результат получен.
 
 ## Важно про прогнозы

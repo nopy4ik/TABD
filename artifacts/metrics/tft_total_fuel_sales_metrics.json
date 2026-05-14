@@ -1,6 +1,6 @@
 {
   "model": "Temporal Fusion Transformer",
-  "model_version": "tft_total_fuel_sales_v1",
+  "model_version": "tft_total_fuel_sales",
   "target": "total_fuel_sales",
   "target_label": "Продажи топлива TFT",
   "mae": 16.94046670949788,
