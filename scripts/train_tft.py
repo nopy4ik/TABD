@@ -1,17 +1,4 @@
 """Обучение Temporal Fusion Transformer для прогноза топлива и товаров.
-
-Скрипт обучает настоящую TFT-модель через `pytorch-forecasting`.
-Чтобы обучение на обычном CPU не занимало слишком много времени, используется
-компактный файл `_задание/5stations_data.csv`: 5 АЗС, один год почасовых данных.
-
-Что сохраняется после запуска:
-
-- `artifacts/models/tft_total_fuel_sales.ckpt` - веса модели по топливу;
-- `artifacts/models/tft_shop_total_revenue.ckpt` - веса модели по товарам;
-- `artifacts/models/tft_*_config.json` - параметры запуска;
-- `artifacts/metrics/tft_*_metrics.json` - MAE, MSE, RMSE, R2 на backtest;
-- `artifacts/forecasts/tft_*_backtest_forecast.csv` - факт/прогноз на декабре;
-- `artifacts/forecasts/tft_*_future_forecast.csv` - прогноз на будущие 7 дней.
 """
 
 from __future__ import annotations
@@ -47,7 +34,7 @@ TARGET_CONFIGS = [
         "model_version": "tft_total_fuel_sales",
         "data_start": "2023-07-01",
         "max_encoder_length": 48,
-        "max_prediction_length": 24,
+        "max_prediction_length": 168,
         "learning_rate": 0.03,
         "hidden_size": 8,
         "attention_head_size": 2,
@@ -64,7 +51,7 @@ TARGET_CONFIGS = [
         "model_version": "tft_shop_total_revenue",
         "data_start": None,
         "max_encoder_length": 168,
-        "max_prediction_length": 24,
+        "max_prediction_length": 168,
         "learning_rate": 0.01,
         "hidden_size": 16,
         "attention_head_size": 4,
@@ -77,7 +64,7 @@ TARGET_CONFIGS = [
 ]
 TARGET_COLUMNS = [config["target"] for config in TARGET_CONFIGS]
 
-FUTURE_DAYS = 1
+FUTURE_DAYS = 7
 DEFAULT_MAX_EPOCHS = 8
 DEFAULT_BATCH_SIZE = 128
 
@@ -172,15 +159,11 @@ def load_data(data_start: str | None) -> pd.DataFrame:
     df = pd.read_csv(DATA_DIR / "5stations_data.csv")
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     if data_start:
-        # Для топлива достаточно более короткого контекста, а для магазина
-        # полезнее оставить весь год, потому что ряд разреженный и с нулями.
         df = df[df["timestamp"] >= data_start].copy()
     df = df.sort_values(["station_id", "timestamp"]).reset_index(drop=True)
 
-    # TFT требует целочисленный индекс времени без пропусков внутри группы.
     df["time_idx"] = df.groupby("station_id").cumcount()
 
-    # Все категориальные признаки переводим в строки и заполняем пропуски.
     for col in CATEGORICAL_COLUMNS:
         df[col] = df[col].fillna("нет").astype(str)
 
@@ -266,7 +249,7 @@ def train_model(
     batch_size: int = DEFAULT_BATCH_SIZE,
     resume_from_checkpoint: bool = True,
 ) -> TemporalFusionTransformer:
-    """Обучает TFT-модель и умеет продолжать обучение из сохраненного чекпоинта."""
+    """Обучает TFT-модель"""
 
     reusable_checkpoint = ARTIFACTS_DIR / "models" / f"{model_version}.ckpt"
 
